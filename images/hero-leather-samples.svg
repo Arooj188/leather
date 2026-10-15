@@ -1,0 +1,61 @@
+<svg width="1200" height="1100" viewBox="0 0 1200 1100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="1100" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#f6f1eb"/>
+      <stop offset="1" stop-color="#e9e0d6"/>
+    </linearGradient>
+    <linearGradient id="sheet1" x1="185" y1="210" x2="970" y2="740" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#b77b5f"/>
+      <stop offset="0.35" stop-color="#8d5a46"/>
+      <stop offset="0.7" stop-color="#4d342f"/>
+      <stop offset="1" stop-color="#2d2120"/>
+    </linearGradient>
+    <linearGradient id="sheet2" x1="220" y1="250" x2="975" y2="790" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#d7b189"/>
+      <stop offset="0.28" stop-color="#b7845a"/>
+      <stop offset="0.56" stop-color="#7a4d3a"/>
+      <stop offset="1" stop-color="#352827"/>
+    </linearGradient>
+    <linearGradient id="sheet3" x1="265" y1="300" x2="930" y2="830" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#d5d2ce"/>
+      <stop offset="0.33" stop-color="#7e7c7b"/>
+      <stop offset="0.65" stop-color="#404244"/>
+      <stop offset="1" stop-color="#1f2124"/>
+    </linearGradient>
+    <linearGradient id="sheet4" x1="300" y1="360" x2="900" y2="860" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#c6b6a6"/>
+      <stop offset="0.38" stop-color="#8b785f"/>
+      <stop offset="0.7" stop-color="#4a403a"/>
+      <stop offset="1" stop-color="#221d1a"/>
+    </linearGradient>
+    <filter id="noise" x="-20%" y="-20%" width="140%" height="140%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch"/>
+      <feColorMatrix type="saturate" values="0"/>
+      <feComponentTransfer>
+        <feFuncA type="table" tableValues="0 0.18"/>
+      </feComponentTransfer>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="1100" fill="url(#bg)"/>
+  <g filter="url(#noise)">
+    <rect width="1200" height="1100" fill="#000" opacity="0.07"/>
+  </g>
+
+  <g opacity="0.97">
+    <path d="M228 624C402 498 577 454 757 484C854 500 926 539 1013 610L996 738C910 689 840 665 739 659C563 650 431 695 315 770L228 624Z" fill="url(#sheet1)"/>
+    <path d="M176 688C332 600 480 575 650 596C757 608 863 643 960 707L869 844C779 803 697 780 594 774C471 766 352 795 251 871L176 688Z" fill="url(#sheet2)"/>
+    <path d="M215 765C377 693 493 669 631 672C759 675 866 705 970 793L870 912C753 864 655 844 545 846C427 848 322 872 226 938L215 765Z" fill="url(#sheet3)"/>
+    <path d="M280 849C404 786 512 759 621 762C742 766 822 800 892 853L803 960C716 924 626 907 527 909C440 911 350 931 280 849Z" fill="url(#sheet4)"/>
+  </g>
+
+  <g opacity="0.8">
+    <path d="M298 328C438 233 591 199 760 220C819 228 875 243 924 272L876 370C838 349 793 334 744 325C621 304 487 330 359 403L298 328Z" fill="#efe4d8" fill-opacity="0.45"/>
+    <path d="M777 310L980 432L944 513L741 401L777 310Z" fill="#d5c7b8" fill-opacity="0.25"/>
+  </g>
+
+  <g opacity="0.65">
+    <path d="M250 691C399 609 522 586 648 592C778 599 872 635 968 710" stroke="#f3e9dd" stroke-width="12" stroke-linecap="round" stroke-opacity="0.38"/>
+    <path d="M308 782C429 722 528 702 635 706C736 710 821 734 896 780" stroke="#f3e9dd" stroke-width="10" stroke-linecap="round" stroke-opacity="0.3"/>
+  </g>
+</svg>

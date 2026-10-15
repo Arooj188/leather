@@ -1,0 +1,73 @@
+<svg width="1200" height="1200" viewBox="0 0 1200 1200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="1200" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#f7f3ef"/>
+      <stop offset="1" stop-color="#ece4dc"/>
+    </linearGradient>
+
+    <linearGradient id="sheetDarkBrown" x1="292" y1="228" x2="969" y2="946" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#d2b39a"/>
+      <stop offset="0.2" stop-color="#9d6b4d"/>
+      <stop offset="0.42" stop-color="#603f31"/>
+      <stop offset="0.74" stop-color="#2c1f1d"/>
+      <stop offset="1" stop-color="#171312"/>
+    </linearGradient>
+
+    <linearGradient id="sheetMaroon" x1="230" y1="240" x2="927" y2="923" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#d8a77e"/>
+      <stop offset="0.15" stop-color="#bc7d5c"/>
+      <stop offset="0.45" stop-color="#8d4f41"/>
+      <stop offset="0.72" stop-color="#512d2e"/>
+      <stop offset="1" stop-color="#231918"/>
+    </linearGradient>
+
+    <linearGradient id="sheetTan" x1="287" y1="290" x2="910" y2="937" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#f2dcc0"/>
+      <stop offset="0.25" stop-color="#d7b180"/>
+      <stop offset="0.56" stop-color="#a9724d"/>
+      <stop offset="0.82" stop-color="#563f31"/>
+      <stop offset="1" stop-color="#251d1a"/>
+    </linearGradient>
+
+    <linearGradient id="sheetBlack" x1="300" y1="330" x2="988" y2="1003" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#d5d9db"/>
+      <stop offset="0.18" stop-color="#9fa3a7"/>
+      <stop offset="0.45" stop-color="#3b3d40"/>
+      <stop offset="0.78" stop-color="#17191d"/>
+      <stop offset="1" stop-color="#090b0d"/>
+    </linearGradient>
+
+    <filter id="grainy" x="-20%" y="-20%" width="140%" height="140%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch"/>
+      <feColorMatrix type="saturate" values="0"/>
+      <feComponentTransfer>
+        <feFuncA type="table" tableValues="0 0.12"/>
+      </feComponentTransfer>
+    </filter>
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="32" stdDeviation="26" flood-color="#0d0d0d" flood-opacity="0.12"/>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="1200" fill="url(#bg)"/>
+  <g filter="url(#grainy)">
+    <rect width="1200" height="1200" fill="#000" opacity="0.04"/>
+  </g>
+
+  <g filter="url(#softShadow)" opacity="0.98">
+    <path d="M197 786C338 694 504 661 651 668C759 673 865 705 947 779L894 939C802 896 718 876 604 872C488 868 374 891 278 970L197 786Z" fill="url(#sheetDarkBrown)"/>
+    <path d="M162 728C319 643 472 621 628 630C757 638 872 676 962 754L902 900C790 854 685 831 566 831C451 831 351 858 249 932L162 728Z" fill="url(#sheetMaroon)"/>
+    <path d="M226 648C374 567 508 548 654 558C776 567 881 603 959 676L890 809C785 763 686 741 570 741C461 741 358 770 272 825L226 648Z" fill="url(#sheetTan)"/>
+    <path d="M285 555C415 485 531 467 662 479C777 490 879 541 958 607L897 738C789 685 688 664 588 663C491 661 394 680 310 744L285 555Z" fill="url(#sheetBlack)"/>
+  </g>
+
+  <g opacity="0.8">
+    <path d="M214 713C296 645 382 612 495 601C559 595 626 596 704 618C774 637 838 669 899 718" stroke="#f9efe6" stroke-width="12" stroke-linecap="round" stroke-opacity="0.38"/>
+    <path d="M238 816C358 759 462 738 575 739C678 740 767 763 853 817" stroke="#f2e5d9" stroke-width="10" stroke-linecap="round" stroke-opacity="0.28"/>
+  </g>
+
+  <g opacity="0.7">
+    <ellipse cx="420" cy="862" rx="250" ry="42" fill="#e9ddd0" fill-opacity="0.18"/>
+    <ellipse cx="635" cy="790" rx="255" ry="54" fill="#d9d1c8" fill-opacity="0.12"/>
+  </g>
+</svg>

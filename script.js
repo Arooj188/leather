@@ -458,13 +458,17 @@ function initMobileNavigation() {
 
   toggle.addEventListener("click", () => {
     const isExpanded = toggle.getAttribute("aria-expanded") === "true";
-    toggle.setAttribute("aria-expanded", String(!isExpanded));
-    mobileMenu.hidden = isExpanded;
+    const nextState = !isExpanded;
+
+    toggle.setAttribute("aria-expanded", String(nextState));
+    mobileMenu.hidden = !nextState;
+    toggle.classList.toggle("is-open", nextState);
   });
 
   mobileMenu.querySelectorAll("a").forEach((link) => {
     link.addEventListener("click", () => {
       toggle.setAttribute("aria-expanded", "false");
+      toggle.classList.remove("is-open");
       mobileMenu.hidden = true;
     });
   });
