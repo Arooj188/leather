@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Browse the artificial leather collection from Atif Leather Store. Search by product name, code and colour, then enquire about the item you need."
+    />
+    <link rel="canonical" href="https://example.com/" />
+    <meta property="og:title" content="Atif Leather Store | Artificial Leather Catalogue" />
+    <meta
+      property="og:description"
+      content="Browse the artificial leather catalogue from Atif Leather Store and enquire about the right product for your project."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://example.com/" />
+    <meta property="og:image" content="images/brand/favicon.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="icon" type="image/svg+xml" href="images/brand/favicon.svg" />
+    <title>Atif Leather Store | Artificial Leather Catalogue</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container nav-shell">
+        <a href="#home" class="brand" aria-label="Atif Leather Store home">
+          <span class="brand-mark" aria-hidden="true">ALS</span>
+          <span class="brand-text">Atif Leather Store</span>
+        </a>
+
+        <nav class="main-nav" aria-label="Main navigation">
+          <a href="#home" class="active">Home</a>
+          <a href="#catalogue">Products</a>
+          <a href="#about">About</a>
+          <a href="#contact">Contact</a>
+        </nav>
+
+        <div class="nav-actions">
+          <a class="button button-primary" href="#catalogue">Browse Products</a>
+          <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="mobileMenu" aria-label="Open navigation menu">
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
+        </div>
+      </div>
+
+      <div id="mobileMenu" class="mobile-menu" hidden>
+        <nav aria-label="Mobile navigation">
+          <a href="#home">Home</a>
+          <a href="#catalogue">Products</a>
+          <a href="#about">About</a>
+          <a href="#contact">Contact</a>
+          <a class="button button-primary mobile-cta" href="#catalogue">Browse Products</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section id="home" class="hero section">
+        <div class="container hero-grid">
+          <div class="hero-copy">
+            <p class="eyebrow">Artificial leather collection</p>
+            <h1>Artificial Leather in a Range of Colours</h1>
+            <p class="hero-text">
+              Browse our artificial leather collection by product name, code and colour. Contact us to enquire about a product or request further details.
+            </p>
+            <div class="hero-actions">
+              <a class="button button-primary" href="#catalogue">Browse Products</a>
+              <a id="heroWhatsApp" class="button button-secondary" href="#" aria-label="Enquire on WhatsApp">Enquire on WhatsApp</a>
+            </div>
+          </div>
+
+          <div class="hero-visual" aria-label="Product image coming soon">
+            <div class="hero-visual__panel" role="img" aria-label="Product image coming soon">
+              <span class="visual-label">Product image coming soon</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="catalogue" class="catalogue section">
+        <div class="container">
+          <div class="section-heading">
+            <p class="eyebrow">Catalogue</p>
+            <h2>Our Products</h2>
+            <p>Explore the available collection by colour or product code. Contact us if you need more information about a particular item.</p>
+          </div>
+
+          <div class="toolbar" aria-label="Catalogue controls">
+            <label class="search-field" for="searchInput">
+              <span class="sr-only">Search products</span>
+              <input id="searchInput" type="search" placeholder="Search by code, name, or colour" aria-label="Search products" />
+            </label>
+
+            <label class="select-field" for="colourFilter">
+              <span>Colour</span>
+              <select id="colourFilter" aria-label="Filter by colour">
+                <option value="all">All colours</option>
+              </select>
+            </label>
+
+            <label class="select-field" for="familyFilter">
+              <span>Product family</span>
+              <select id="familyFilter" aria-label="Filter by product family">
+                <option value="all">All products</option>
+              </select>
+            </label>
+
+            <label class="select-field" for="sortSelect">
+              <span>Sort by</span>
+              <select id="sortSelect" aria-label="Sort products">
+                <option value="name-asc">Product name</option>
+                <option value="code-asc">Inventory code</option>
+                <option value="colour-asc">Colour</option>
+              </select>
+            </label>
+
+            <button id="resetFilters" class="button button-ghost" type="button">Reset</button>
+          </div>
+
+          <div class="results-bar">
+            <p id="resultsCount" aria-live="polite">32 products available</p>
+          </div>
+
+          <div id="productGrid" class="product-grid" aria-live="polite"></div>
+
+          <div id="emptyState" class="empty-state hidden" aria-live="polite">
+            <h3>No products match the current search.</h3>
+            <p>Try another code, product name, or colour, then reset the filters to view the full catalogue.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="about" class="about section section-muted">
+        <div class="container narrow-content">
+          <p class="eyebrow">About</p>
+          <h2>About Atif Leather Store</h2>
+          <p>
+            Atif Leather Store provides a catalogue of artificial leather products for customers to browse and enquire about. Our collection is organised by product name, inventory code and colour to make finding an item easier.
+          </p>
+          <p>
+            Additional company information can be added here when the business owner approves the final public details.
+          </p>
+        </div>
+      </section>
+
+      <section id="contact" class="contact section">
+        <div class="container">
+          <div class="section-heading">
+            <p class="eyebrow">Contact</p>
+            <h2>Need Product Information?</h2>
+            <p>Looking for a specific item? Share the product code or send a quick enquiry and our team will assist you with the details you need.</p>
+          </div>
+
+          <div class="contact-layout">
+            <div class="contact-panel">
+              <h3>Request product details</h3>
+              <div class="contact-actions">
+                <a id="whatsappLink" class="button button-primary" href="#" aria-disabled="true">Send enquiry on WhatsApp</a>
+                <a id="emailLink" class="button button-secondary" href="#" aria-disabled="true">Email enquiry</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container footer-shell">
+        <div>
+          <p class="footer-brand">Atif Leather Store</p>
+          <p class="footer-copy">© <span id="currentYear"></span> Atif Leather Store</p>
+        </div>
+
+        <nav aria-label="Footer navigation">
+          <a href="#home">Home</a>
+          <a href="#catalogue">Products</a>
+          <a href="#about">About</a>
+          <a href="#contact">Contact</a>
+        </nav>
+
+        <div id="footerContact" class="footer-contact"></div>
+      </div>
+    </footer>
+
+    <div id="productModal" class="modal hidden" aria-hidden="true">
+      <div class="modal-backdrop" data-close-modal="true"></div>
+      <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <button type="button" class="modal-close" id="modalCloseButton" aria-label="Close product details">×</button>
+        <div id="modalContent"></div>
+      </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="products.js"></script>
+    <script src="script.js"></script>
+  </body>
+</html>
