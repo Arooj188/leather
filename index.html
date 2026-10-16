@@ -5,21 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="Browse the artificial leather collection from Atif Leather Store. Search by product name, code and colour, then enquire about the item you need."
+      content="Explore Atif Leather Store's artificial leather catalogue by product name, inventory code and colour. Browse the collection and enquire directly for product information."
     />
-    <link rel="canonical" href="https://example.com/" />
+    <link rel="canonical" href="https://arooj188.github.io/leather/" />
     <meta property="og:title" content="Atif Leather Store | Artificial Leather Catalogue" />
     <meta
       property="og:description"
-      content="Browse the artificial leather catalogue from Atif Leather Store and enquire about the right product for your project."
+      content="Explore artificial leather by product name, inventory code and colour with Atif Leather Store."
     />
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://example.com/" />
-    <meta property="og:image" content="images/brand/favicon.svg" />
+    <meta property="og:url" content="https://arooj188.github.io/leather/" />
+    <meta property="og:image" content="https://arooj188.github.io/leather/assets/leather%20main.png" />
+    <meta property="og:image:width" content="1774" />
+    <meta property="og:image:height" content="887" />
+    <meta property="og:image:alt" content="Layered synthetic leather sheets in warm brown and cream tones" />
     <meta name="twitter:card" content="summary_large_image" />
     <link rel="icon" type="image/svg+xml" href="images/brand/favicon.svg" />
     <title>Atif Leather Store | Artificial Leather Catalogue</title>
-    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="style.css?v=20261016-11" />
   </head>
   <body>
     <header class="site-header">
@@ -62,9 +65,9 @@
         <div class="container hero-grid">
           <div class="hero-copy">
             <p class="eyebrow">Artificial leather collection</p>
-            <h1>Artificial Leather in a Range of Colours</h1>
+            <h1>Artificial Leather for Every Colour Palette</h1>
             <p class="hero-text">
-              Browse our artificial leather collection by product name, code and colour. Contact us to enquire about a product or request further details.
+              Explore our artificial leather catalogue by product name, code and colour. Browse the available collection and contact us for product information or enquiries.
             </p>
             <div class="hero-actions">
               <a class="button button-primary" href="#catalogue">Browse Products</a>
@@ -73,27 +76,40 @@
 
             <div class="hero-features" aria-label="Business highlights">
               <div class="feature-mini">
-                <span class="feature-mini__icon" aria-hidden="true">▣</span>
-                <span>Premium finish</span>
+                <span class="feature-mini__icon" aria-hidden="true"></span>
+                <span>Colour-based browsing</span>
               </div>
               <div class="feature-mini">
-                <span class="feature-mini__icon" aria-hidden="true">▣</span>
-                <span>Custom colours</span>
+                <span class="feature-mini__icon" aria-hidden="true"></span>
+                <span>Product code search</span>
               </div>
               <div class="feature-mini">
-                <span class="feature-mini__icon" aria-hidden="true">▣</span>
-                <span>Bulk supply</span>
+                <span class="feature-mini__icon" aria-hidden="true"></span>
+                <span>Catalogue enquiries</span>
               </div>
               <div class="feature-mini">
-                <span class="feature-mini__icon" aria-hidden="true">▣</span>
-                <span>Fast enquiry</span>
+                <span class="feature-mini__icon" aria-hidden="true"></span>
+                <span>Bulk order</span>
               </div>
             </div>
           </div>
 
-          <div class="hero-visual" aria-label="Synthetic leather product detail">
-            <div class="hero-visual__panel" role="img" aria-label="Synthetic leather material close-up">
-              <div class="hero-visual__image" aria-hidden="true"></div>
+          <div class="hero-visual">
+            <div class="hero-visual__panel">
+              <img
+                class="hero-visual__image"
+                src="assets/leather main.png"
+                alt="Layered synthetic leather sheets with pebbled texture in warm tan, brown and cream tones"
+                width="1774"
+                height="887"
+                fetchpriority="high"
+                hidden
+              />
+              <div class="hero-image-fallback" role="img" aria-label="Hero material photograph not yet added">
+                <span class="hero-image-fallback__eyebrow">Material catalogue</span>
+                <span class="hero-image-fallback__title">Synthetic leather</span>
+                <span class="hero-image-fallback__note">Hero photograph not yet added</span>
+              </div>
             </div>
           </div>
         </div>
@@ -137,6 +153,17 @@
             </label>
 
             <button id="resetFilters" class="button button-ghost" type="button">Reset</button>
+
+            <div class="view-toggle" role="group" aria-label="Product layout">
+              <button id="gridViewButton" type="button" aria-label="Grid view" aria-pressed="true" title="Grid view">
+                <span class="view-icon view-icon--grid" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+                <span>Grid</span>
+              </button>
+              <button id="listViewButton" type="button" aria-label="List view" aria-pressed="false" title="List view">
+                <span class="view-icon view-icon--list" aria-hidden="true"><i></i><i></i><i></i></span>
+                <span>List</span>
+              </button>
+            </div>
           </div>
 
           <div class="results-bar">
@@ -156,12 +183,9 @@
         <div class="container narrow-content">
           <p class="eyebrow">About</p>
           <h2>About Atif Leather Store</h2>
-          <p>
-            Atif Leather Store provides a catalogue of artificial leather products for customers to browse and enquire about. Our collection is organised by product name, inventory code and colour to make finding an item easier.
-          </p>
-          <p>
-            Additional company information can be added here when the business owner approves the final public details.
-          </p>
+          <p>Atif Leather Store provides a convenient way to explore an artificial leather collection by product name, inventory code and colour. Our online catalogue helps customers identify the materials they are interested in and enquire about product details directly.</p>
+          <p>Whether you are browsing available colours or looking for a particular catalogue code, you can use the product listings to identify an item and contact us for further information.</p>
+          <p>For details about product specifications, availability and other requirements, please contact Atif Leather Store.</p>
         </div>
       </section>
 
@@ -170,15 +194,15 @@
           <div class="section-heading">
             <p class="eyebrow">Contact</p>
             <h2>Need Product Information?</h2>
-            <p>Looking for a specific item? Share the product code or send a quick enquiry and our team will assist you with the details you need.</p>
+            <p>Looking for a specific item? Share the product code in a WhatsApp enquiry to ask Atif Leather Store for product details.</p>
           </div>
 
           <div class="contact-layout">
             <div class="contact-panel">
               <h3>Request product details</h3>
               <div class="contact-actions">
+                <a id="phoneLink" class="button button-secondary" href="#" aria-disabled="true" hidden>Call Atif Leather Store</a>
                 <a id="whatsappLink" class="button button-primary" href="#" aria-disabled="true">Send enquiry on WhatsApp</a>
-                <a id="emailLink" class="button button-secondary" href="#" aria-disabled="true">Email enquiry</a>
               </div>
             </div>
           </div>
@@ -212,8 +236,8 @@
       </div>
     </div>
 
-    <script src="config.js"></script>
+    <script src="config.js?v=20261016-4"></script>
     <script src="products.js"></script>
-    <script src="script.js"></script>
+    <script src="script.js?v=20261016-7"></script>
   </body>
 </html>

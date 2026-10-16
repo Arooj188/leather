@@ -18,6 +18,7 @@ This keeps the site simple, fast, and beginner-friendly.
 - `config.js` – configurable business details and SEO defaults
 - `products.js` – the complete 32-product inventory
 - `script.js` – filtering, sorting, search, modal behaviour, and contact rendering
+- `assets/leather main.png` – approved homepage material photograph
 - `images/brand/` – brand artwork and favicon placeholders
 - `images/products/` – future image storage location for verified product photos
 - `robots.txt` – crawler instructions for deployment
@@ -93,6 +94,10 @@ imageStatus: "verified"
 
 Keep the image files organised by product code. Do not use an unverified photo or a random supplier image.
 
+## How to add the homepage hero photograph
+
+Place the approved photograph at `assets/leather main.png`. The hero image in `index.html` uses this project-relative path, which resolves correctly under GitHub Pages `/leather/`. If the image is missing, the page shows a labelled neutral fallback; do not use an external image URL.
+
 ## How to configure business details
 
 Open `config.js` and update the values that the business owner approves.
@@ -126,8 +131,10 @@ Leave empty values until approved details are supplied.
 Example:
 
 ```js
-whatsappNumber: "923001234567"
+whatsappNumber: "YOUR_INTERNATIONAL_NUMBER"
 ```
+
+Replace the placeholder with the configured business WhatsApp number before using it.
 
 If the value is empty, the public WhatsApp button remains disabled and shows a helpful note.
 
@@ -142,6 +149,7 @@ Open the page in the browser and try:
 - filtering by product family
 - sorting by product name or code
 - resetting the filters
+- switching between Grid and List view
 
 The search and filters update the catalogue without reloading the page.
 
@@ -151,25 +159,18 @@ Before deployment, review and confirm:
 
 - business name and public identity
 - approved contact details
-- final product names and codes
+- final product names, codes and any apparent spelling inconsistencies
 - genuine product images if available
-- final Canonical URL and domain
 - any privacy or legal pages required by the owner
 
 The project is set up as a static website so it can be hosted on a standard static hosting service.
 
 ## Information still needing approval
 
-The following details have not yet been supplied and should be confirmed by the business owner before launch:
+The following details should be reviewed by the business owner before launch:
 
-- business name
-- phone number
-- WhatsApp number
-- email address
-- city or business address
-- social media links
+- product names and possible spelling inconsistencies, including `MEGENTA`
 - final approved product photographs
 - final public product specifications
-- final website domain and launch date
 
 This project intentionally avoids making unsupported claims or exposing internal supplier or pricing information.

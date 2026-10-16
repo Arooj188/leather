@@ -1,11 +1,20 @@
 const productsList = Array.isArray(window.products) ? window.products : [];
 const config = window.businessConfig || {};
 
+function getSavedCatalogueView() {
+  try {
+    return window.localStorage.getItem("atifLeatherCatalogueView") === "list" ? "list" : "grid";
+  } catch {
+    return "grid";
+  }
+}
+
 const state = {
   search: "",
   colour: "all",
   family: "all",
-  sort: "name-asc"
+  sort: "name-asc",
+  view: getSavedCatalogueView()
 };
 
 let lastFocusedElement = null;
@@ -83,6 +92,7 @@ function renderCatalogue() {
   const emptyState = document.getElementById("emptyState");
   const countElement = document.getElementById("resultsCount");
   const visibleProducts = getVisibleProducts();
+  productGrid.dataset.view = state.view;
 
   countElement.textContent =
     visibleProducts.length === productsList.length
@@ -107,6 +117,7 @@ function renderCatalogue() {
 
 function createProductCardMarkup(product) {
   const imageMarkup = getProductImageMarkup(product);
+  const unitMarkup = product.unit ? `<span>${escapeHtml(product.unit)}</span>` : "";
   const noteText = product.publicSpecifications && product.publicSpecifications.length
     ? `<li>${escapeHtml(product.publicSpecifications[0])}</li>`
     : "<li>Product details available on request.</li>";
@@ -119,7 +130,7 @@ function createProductCardMarkup(product) {
         <p class="product-card__code">Code ${escapeHtml(product.code)}</p>
         <div class="product-card__meta">
           <span>${escapeHtml(product.colour)}</span>
-          <span>${escapeHtml(product.unit)}</span>
+          ${unitMarkup}
         </div>
         <ul class="product-card__specs">${noteText}</ul>
         <button type="button" class="product-card__cta" data-product-code="${escapeHtml(product.code)}">View Details</button>
@@ -129,13 +140,14 @@ function createProductCardMarkup(product) {
 }
 
 function getProductImageMarkup(product) {
-  if (product.image && product.imageStatus !== "missing") {
+  if (product.image && product.imageStatus === "verified") {
     return `<img src="${escapeHtml(product.image)}" alt="${escapeHtml(product.name)} in ${escapeHtml(product.colour)}" />`;
   }
 
   return `
-    <div class="product-placeholder" role="img" aria-label="Product image coming soon">
-      <span>Product image coming soon</span>
+    <div class="product-placeholder" role="img" aria-label="Neutral placeholder only; not a photograph of ${escapeHtml(product.name)}">
+      <span class="product-placeholder__label">Product photo not supplied</span>
+      <small>Neutral placeholder, not an item photo</small>
     </div>
   `;
 }
@@ -146,6 +158,11 @@ function bindEvents() {
   const familyFilter = document.getElementById("familyFilter");
   const sortSelect = document.getElementById("sortSelect");
   const resetButton = document.getElementById("resetFilters");
+  const gridViewButton = document.getElementById("gridViewButton");
+  const listViewButton = document.getElementById("listViewButton");
+
+  gridViewButton.addEventListener("click", () => setCatalogueView("grid"));
+  listViewButton.addEventListener("click", () => setCatalogueView("list"));
 
   searchInput.addEventListener("input", (event) => {
     state.search = event.target.value;
@@ -182,18 +199,31 @@ function bindEvents() {
   });
 }
 
+function setCatalogueView(view) {
+  state.view = view === "list" ? "list" : "grid";
+  const productGrid = document.getElementById("productGrid");
+  const gridViewButton = document.getElementById("gridViewButton");
+  const listViewButton = document.getElementById("listViewButton");
+
+  productGrid.dataset.view = state.view;
+  gridViewButton.setAttribute("aria-pressed", String(state.view === "grid"));
+  listViewButton.setAttribute("aria-pressed", String(state.view === "list"));
+  gridViewButton.classList.toggle("is-selected", state.view === "grid");
+  listViewButton.classList.toggle("is-selected", state.view === "list");
+
+  try {
+    window.localStorage.setItem("atifLeatherCatalogueView", state.view);
+  } catch {
+    return;
+  }
+}
+
 function renderContactDetails() {
-  const contactDetails = document.getElementById("contactDetails");
   const whatsappLink = document.getElementById("whatsappLink");
-  const emailLink = document.getElementById("emailLink");
-  const contactNote = document.getElementById("contactNote");
+  const phoneLink = document.getElementById("phoneLink");
   const footerContact = document.getElementById("footerContact");
 
   const entries = [];
-
-  if (contactDetails) {
-    contactDetails.innerHTML = "";
-  }
 
   if (config.email) {
     entries.push({ label: "Email", value: config.email, href: `mailto:${config.email}` });
@@ -212,59 +242,8 @@ function renderContactDetails() {
     });
   }
 
-  if (!entries.length && !config.whatsappNumber) {
-    if (contactDetails) {
-      contactDetails.innerHTML = "<p>No public contact details have been configured yet.</p>";
-    }
-    footerContact.innerHTML = "";
-    if (contactNote) {
-      contactNote.textContent = "Contact information will appear here once the business owner supplies approved details.";
-    }
-    whatsappLink.href = "#";
-    whatsappLink.setAttribute("aria-disabled", "true");
-    whatsappLink.classList.add("button-disabled");
-    whatsappLink.classList.add("is-disabled");
-    whatsappLink.textContent = "WhatsApp enquiry unavailable";
-    emailLink.href = "#";
-    emailLink.setAttribute("aria-disabled", "true");
-    emailLink.textContent = "Email enquiry unavailable";
-    return;
-  }
-
-  if (!entries.length && config.whatsappNumber) {
-    if (contactDetails) {
-      contactDetails.innerHTML = "";
-    }
-    footerContact.innerHTML = "";
-    if (contactNote) {
-      contactNote.textContent = "";
-    }
-    whatsappLink.href = getDirectWhatsAppLink("Hello, I would like to enquire about a product from Atif Leather Store. Please share the available details and pricing information.");
-    whatsappLink.setAttribute("aria-disabled", "false");
-    whatsappLink.classList.remove("is-disabled");
-    whatsappLink.textContent = "Send enquiry on WhatsApp";
-    whatsappLink.removeAttribute("tabindex");
-    whatsappLink.setAttribute("target", "_blank");
-    whatsappLink.setAttribute("rel", "noopener noreferrer");
-    emailLink.href = "#";
-    emailLink.setAttribute("aria-disabled", "true");
-    emailLink.textContent = "Email enquiry unavailable";
-    return;
-  }
-
-  contactDetails.innerHTML = `
-    <dl class="contact-list">
-      ${entries
-        .map((entry) => {
-          if (!entry.value) return "";
-          const content = entry.href ? `<a href="${escapeHtml(entry.href)}">${escapeHtml(entry.value)}</a>` : `<span>${escapeHtml(entry.value)}</span>`;
-          return `<div class="contact-item"><dt>${escapeHtml(entry.label)}</dt><dd>${content}</dd></div>`;
-        })
-        .join("")}
-    </dl>
-  `;
-
-  footerContact.innerHTML = entries
+  if (footerContact) {
+    footerContact.innerHTML = entries
     .slice(0, 3)
     .map((entry) => {
       if (!entry.value) return "";
@@ -274,9 +253,23 @@ function renderContactDetails() {
       return `<span>${escapeHtml(entry.label)}</span>`;
     })
     .join("");
+  }
+
+  if (phoneLink) {
+    const telephoneNumber = String(config.phone || "").replace(/[^\d+]/g, "");
+    if (telephoneNumber) {
+      phoneLink.href = `tel:${telephoneNumber}`;
+      phoneLink.textContent = "Call Atif Leather Store";
+      phoneLink.setAttribute("aria-disabled", "false");
+      phoneLink.hidden = false;
+    } else {
+      phoneLink.removeAttribute("href");
+      phoneLink.setAttribute("aria-disabled", "true");
+      phoneLink.hidden = true;
+    }
+  }
 
   if (config.whatsappNumber) {
-    const validNumber = cleanWhatsAppNumber(config.whatsappNumber);
     whatsappLink.href = getDirectWhatsAppLink("Hello, I would like to enquire about a product from Atif Leather Store. Please share the available details and pricing information.");
     whatsappLink.setAttribute("aria-disabled", "false");
     whatsappLink.classList.remove("is-disabled");
@@ -289,24 +282,9 @@ function renderContactDetails() {
     whatsappLink.setAttribute("aria-disabled", "true");
     whatsappLink.classList.add("is-disabled");
     whatsappLink.textContent = "WhatsApp enquiry unavailable";
+    whatsappLink.setAttribute("tabindex", "-1");
     whatsappLink.removeAttribute("target");
     whatsappLink.removeAttribute("rel");
-  }
-
-  if (config.email) {
-    emailLink.href = `mailto:${config.email}?subject=${encodeURIComponent("Product enquiry")}`;
-    emailLink.setAttribute("aria-disabled", "false");
-    emailLink.textContent = "Email enquiry";
-  } else {
-    emailLink.href = "#";
-    emailLink.setAttribute("aria-disabled", "true");
-    emailLink.textContent = "Email enquiry unavailable";
-  }
-
-  if (contactNote) {
-    contactNote.textContent = config.whatsappNumber
-      ? "We respond quickly to product and stock enquiries from customers who need assistance choosing the right material."
-      : "Business contact details are still being confirmed. The public enquiry paths will be activated once approved.";
   }
 }
 
@@ -328,16 +306,6 @@ function buildWhatsAppLink(product) {
   return getDirectWhatsAppLink(message);
 }
 
-function buildEmailLink(product) {
-  if (!config.email) {
-    return "#";
-  }
-
-  const subject = `Enquiry for ${product.name} (${product.code})`;
-  const body = `Hello, I would like to enquire about ${product.name}, product code ${product.code}. Please share the available details.`;
-  return `mailto:${config.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-}
-
 function openProductModal(productCode) {
   const product = productsList.find((item) => String(item.code) === String(productCode));
   if (!product) {
@@ -348,9 +316,11 @@ function openProductModal(productCode) {
 
   const modal = document.getElementById("productModal");
   const modalContent = document.getElementById("modalContent");
-  const specItems = product.publicSpecifications && product.publicSpecifications.length
+  const hasPublicSpecifications = product.publicSpecifications && product.publicSpecifications.length;
+  const specItems = hasPublicSpecifications
     ? product.publicSpecifications.map((spec) => `<li>${escapeHtml(spec)}</li>`).join("")
-    : "<li>Specifications will be confirmed before publication.</li>";
+    : "<li>Contact us for product details.</li>";
+  const specificationsHeading = hasPublicSpecifications ? "Product specifications" : "Product information";
 
   const associatedText = product.associatedText ? `<div class="detail-row"><dt>Associated text</dt><dd>${escapeHtml(product.associatedText)}</dd></div>` : "";
 
@@ -363,11 +333,11 @@ function openProductModal(productCode) {
         <dl class="detail-list">
           <div class="detail-row"><dt>Inventory code</dt><dd>${escapeHtml(product.code)}</dd></div>
           <div class="detail-row"><dt>Colour</dt><dd>${escapeHtml(product.colour)}</dd></div>
-          <div class="detail-row"><dt>Unit</dt><dd>${escapeHtml(product.unit)}</dd></div>
+          ${product.unit ? `<div class="detail-row"><dt>Unit</dt><dd>${escapeHtml(product.unit)}</dd></div>` : ""}
           ${associatedText}
         </dl>
 
-        <h4>Public specifications</h4>
+        <h4>${specificationsHeading}</h4>
         <ul class="spec-list">${specItems}</ul>
 
         <div class="modal-actions">
@@ -376,11 +346,11 @@ function openProductModal(productCode) {
             href="${escapeHtml(buildWhatsAppLink(product))}"
             class="button button-primary ${config.whatsappNumber ? "" : "is-disabled"}"
             aria-disabled="${config.whatsappNumber ? "false" : "true"}"
+            ${config.whatsappNumber ? 'target="_blank" rel="noopener noreferrer"' : ""}
             ${config.whatsappNumber ? "" : 'tabindex="-1"'}
           >
             Enquire on WhatsApp
           </a>
-          <a href="${escapeHtml(buildEmailLink(product))}" class="button button-secondary ${config.email ? "" : "is-disabled"}" aria-disabled="${config.email ? "false" : "true"}" ${config.email ? "" : 'tabindex="-1"'}>Email enquiry</a>
         </div>
       </div>
     </div>
@@ -388,26 +358,17 @@ function openProductModal(productCode) {
 
   modal.classList.remove("hidden");
   modal.setAttribute("aria-hidden", "false");
+  document.body.classList.add("modal-open");
 
   const closeButton = document.getElementById("modalCloseButton");
   closeButton.focus();
-
-  modal.querySelectorAll("[data-close-modal='true']").forEach((button) => {
-    button.addEventListener("click", closeProductModal);
-  });
-
-  closeButton.addEventListener("click", closeProductModal);
-  modal.addEventListener("click", (event) => {
-    if (event.target.dataset.closeModal === "true") {
-      closeProductModal();
-    }
-  });
 }
 
 function closeProductModal() {
   const modal = document.getElementById("productModal");
   modal.classList.add("hidden");
   modal.setAttribute("aria-hidden", "true");
+  document.body.classList.remove("modal-open");
 
   if (lastFocusedElement && typeof lastFocusedElement.focus === "function") {
     lastFocusedElement.focus();
@@ -463,15 +424,46 @@ function initMobileNavigation() {
     toggle.setAttribute("aria-expanded", String(nextState));
     mobileMenu.hidden = !nextState;
     toggle.classList.toggle("is-open", nextState);
+    toggle.setAttribute("aria-label", nextState ? "Close navigation menu" : "Open navigation menu");
   });
 
   mobileMenu.querySelectorAll("a").forEach((link) => {
     link.addEventListener("click", () => {
       toggle.setAttribute("aria-expanded", "false");
       toggle.classList.remove("is-open");
+      toggle.setAttribute("aria-label", "Open navigation menu");
       mobileMenu.hidden = true;
     });
   });
+}
+
+function initHeroImage() {
+  const image = document.querySelector(".hero-visual__image");
+  const panel = document.querySelector(".hero-visual__panel");
+  const fallback = document.querySelector(".hero-image-fallback");
+
+  if (!image || !panel || !fallback) {
+    return;
+  }
+
+  const showImage = () => {
+    image.hidden = false;
+    fallback.hidden = true;
+    panel.classList.add("has-image");
+  };
+
+  const showFallback = () => {
+    image.hidden = true;
+    fallback.hidden = false;
+    panel.classList.remove("has-image");
+  };
+
+  image.addEventListener("load", showImage, { once: true });
+  image.addEventListener("error", showFallback, { once: true });
+
+  if (image.complete) {
+    image.naturalWidth ? showImage() : showFallback();
+  }
 }
 
 function setHeroWhatsAppLink() {
@@ -489,19 +481,56 @@ function init() {
   populateColourFilter();
   populateFamilyFilter();
   bindEvents();
+  setCatalogueView(state.view);
   renderContactDetails();
   setHeroWhatsAppLink();
+  initHeroImage();
   renderCatalogue();
   setCopyrightYear();
   setActiveNav();
   initMobileNavigation();
 
   document.addEventListener("keydown", (event) => {
+    const modal = document.getElementById("productModal");
+
     if (event.key === "Escape") {
-      const modal = document.getElementById("productModal");
       if (!modal.classList.contains("hidden")) {
         closeProductModal();
+        return;
       }
+
+      const toggle = document.querySelector(".menu-toggle");
+      const mobileMenu = document.getElementById("mobileMenu");
+      if (toggle && mobileMenu && !mobileMenu.hidden) {
+        toggle.setAttribute("aria-expanded", "false");
+        toggle.setAttribute("aria-label", "Open navigation menu");
+        toggle.classList.remove("is-open");
+        mobileMenu.hidden = true;
+        toggle.focus();
+      }
+      return;
+    }
+
+    if (event.key === "Tab" && !modal.classList.contains("hidden")) {
+      const focusable = [...modal.querySelectorAll("a[href]:not([tabindex='-1']), button:not([disabled])")];
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+  });
+
+  const modal = document.getElementById("productModal");
+  document.getElementById("modalCloseButton").addEventListener("click", closeProductModal);
+  modal.addEventListener("click", (event) => {
+    if (event.target.closest("[data-close-modal='true']") || event.target.classList.contains("modal-backdrop")) {
+      closeProductModal();
     }
   });
 }

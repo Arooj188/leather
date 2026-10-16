@@ -13,11 +13,11 @@ window.businessConfig = {
   seo: {
     title: "Atif Leather Store | Artificial Leather Catalogue",
     description:
-      "Browse the artificial leather collection from Atif Leather Store. Search by product name, code and colour, and enquire about a product for your project.",
-    canonicalUrl: "https://example.com/",
+      "Explore Atif Leather Store's artificial leather catalogue by product name, inventory code and colour. Browse the collection and enquire directly for product information.",
+    canonicalUrl: "https://arooj188.github.io/leather/",
     ogTitle: "Atif Leather Store | Artificial Leather Catalogue",
     ogDescription:
-      "A clean artificial leather catalogue for customers who want to browse product names, codes and colours before they enquire.",
-    ogImage: "images/brand/favicon.svg"
+      "Explore artificial leather by product name, inventory code and colour with Atif Leather Store.",
+    ogImage: "https://arooj188.github.io/leather/assets/leather%20main.png"
   }
 };
