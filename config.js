@@ -1,8 +1,6 @@
 window.businessConfig = {
   businessName: "Atif Leather Store",
-  phone: "0300 4203395",
   whatsappNumber: "923004203395",
-  email: "",
   city: "",
   address: "",
   socialLinks: {

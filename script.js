@@ -1,6 +1,65 @@
 const productsList = Array.isArray(window.products) ? window.products : [];
 const config = window.businessConfig || {};
 
+/**
+ * Approximate display colours used for the small swatch shown next to each
+ * written colour name. These are visual guides only - they are not official
+ * colour codes and no colour values were supplied by the product report.
+ * The written colour name always stays visible so colour is never the only
+ * way to identify a product.
+ */
+const COLOUR_SWATCHES = {
+  "ASH GREEN": "#8d9c86",
+  "BABY PINK": "#f3c3ce",
+  "BEIGE": "#ddc9a5",
+  "BLACK": "#1f1d1b",
+  "BLUE": "#2f5f9e",
+  "BROWN": "#6b4a31",
+  "C BROWN": "#8b5a3c",
+  "C.BEIGE": "#d8c3a6",
+  "CAMEL": "#c19a6b",
+  "COFEE BEIGE": "#c5a37e",
+  "COPPER": "#b06f3a",
+  "CREAM": "#f3ead8",
+  "D / PINK": "#d1769a",
+  "D/GRAY": "#5a5e63",
+  "FEROZI": "#7c1e4b",
+  "GOLDEN": "#d3a63c",
+  "L / MAROON": "#9a5560",
+  "L Peach": "#f6d2b9",
+  "L/BEIGE": "#ead6b4",
+  "L/BROWN": "#b08b6b",
+  "L/GOLDEN": "#e2c672",
+  "L/GRAY": "#bcbcbc",
+  "MAROON": "#6e2130",
+  "MEHNDI": "#6c6f3f",
+  "MUSTERD": "#a5772c",
+  "N/BLUE": "#24406f",
+  "New Beige": "#e2cfae",
+  "New Golden": "#d8b154",
+  "New Peach": "#f3c5a5",
+  "OFF WHITE": "#f1efe7",
+  "olive green": "#6f7a42",
+  "ORANGE": "#e0701c",
+  "PEACH": "#f1b48d",
+  "PINK": "#e79cb6",
+  "PURPLE": "#6a3fa0",
+  "RED": "#b02a22",
+  "Rose White": "#f6e4e6",
+  "S / PINK": "#e9a9c2",
+  "s grey": "#9ba1a7",
+  "SEA GREEN": "#2f8b74",
+  "SILVER": "#c8ced6",
+  "sky blue": "#8cc5e0",
+  "T/ PINK": "#d98cab",
+  "TAN BROWN": "#b07a3e",
+  "VESPA BLUE": "#2c6ea3",
+  "WHITE": "#faf8f4",
+  "YELLOW": "#e6c33a"
+};
+
+const MIXED_COLOUR_LABEL = "MIX COLOR";
+
 function getSavedCatalogueView() {
   try {
     return window.localStorage.getItem("atifLeatherCatalogueView") === "list" ? "list" : "grid";
@@ -18,13 +77,14 @@ const state = {
 };
 
 let lastFocusedElement = null;
+let searchTimer = null;
 
 function escapeHtml(value) {
   return String(value ?? "")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
-    .replace(/\"/g, "&quot;")
+    .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
 }
 
@@ -54,11 +114,49 @@ function populateFamilyFilter() {
   familyFilter.innerHTML = `<option value="all">All products</option>${options}`;
 }
 
+/**
+ * Turns the unit label recorded in the source report into a customer friendly
+ * label. The source label itself is kept in the product data; only the way it
+ * is written for customers is expanded here.
+ */
+function formatUnit(unit) {
+  const raw = String(unit ?? "").trim();
+  if (!raw) {
+    return "";
+  }
+
+  const key = raw.toUpperCase();
+
+  if (key === "MTR") {
+    return "Metre (MTR)";
+  }
+
+  if (key === "KG") {
+    return "Kilogram (KG)";
+  }
+
+  return raw;
+}
+
+function getColourSwatchMarkup(colour) {
+  if (colour === MIXED_COLOUR_LABEL) {
+    return `<span class="colour-swatch colour-swatch--mixed" aria-hidden="true"></span>`;
+  }
+
+  const swatchColour = COLOUR_SWATCHES[colour];
+
+  if (swatchColour) {
+    return `<span class="colour-swatch" style="--swatch-colour: ${swatchColour}" aria-hidden="true"></span>`;
+  }
+
+  return `<span class="colour-swatch colour-swatch--unmapped" aria-hidden="true"></span>`;
+}
+
 function getVisibleProducts() {
   const term = state.search.trim().toLowerCase();
 
   const filtered = productsList.filter((product) => {
-    const searchSource = [product.code, product.name, product.colour, product.associatedText]
+    const searchSource = [product.code, product.name, product.colour]
       .filter(Boolean)
       .join(" ")
       .toLowerCase();
@@ -75,7 +173,7 @@ function getVisibleProducts() {
   sorted.sort((a, b) => {
     switch (state.sort) {
       case "code-asc":
-        return String(a.code).localeCompare(String(b.code), undefined, { numeric: true });
+        return String(a.code).localeCompare(String(b.code), undefined, { numeric: true, sensitivity: "base" });
       case "colour-asc":
         return a.colour.localeCompare(b.colour) || String(a.name).localeCompare(String(b.name));
       case "name-asc":
@@ -107,20 +205,18 @@ function renderCatalogue() {
 
   emptyState.classList.add("hidden");
   productGrid.innerHTML = visibleProducts.map((product) => createProductCardMarkup(product)).join("");
-
-  productGrid.querySelectorAll(".product-card__cta").forEach((button) => {
-    button.addEventListener("click", () => {
-      openProductModal(button.dataset.productCode);
-    });
-  });
 }
 
 function createProductCardMarkup(product) {
   const imageMarkup = getProductImageMarkup(product);
-  const unitMarkup = product.unit ? `<span>${escapeHtml(product.unit)}</span>` : "";
-  const noteText = product.publicSpecifications && product.publicSpecifications.length
-    ? `<li>${escapeHtml(product.publicSpecifications[0])}</li>`
-    : "<li>Product details available on request.</li>";
+  const unit = formatUnit(product.unit);
+  const unitMarkup = unit ? `<span class="product-card__chip">${escapeHtml(unit)}</span>` : "";
+  const colourMarkup = `
+    <span class="product-card__chip product-card__chip--colour">
+      ${getColourSwatchMarkup(product.colour)}
+      <span>${escapeHtml(product.colour)}</span>
+    </span>`;
+  const actionsMarkup = getCardActionsMarkup(product);
 
   return `
     <article class="product-card" aria-label="${escapeHtml(product.name)} product card">
@@ -128,26 +224,34 @@ function createProductCardMarkup(product) {
       <div class="product-card__content">
         <h3 class="product-card__name">${escapeHtml(product.name)}</h3>
         <p class="product-card__code">Code ${escapeHtml(product.code)}</p>
-        <div class="product-card__meta">
-          <span>${escapeHtml(product.colour)}</span>
-          ${unitMarkup}
-        </div>
-        <ul class="product-card__specs">${noteText}</ul>
-        <button type="button" class="product-card__cta" data-product-code="${escapeHtml(product.code)}">View Details</button>
+        <div class="product-card__meta">${colourMarkup}${unitMarkup}</div>
+        <div class="product-card__actions">${actionsMarkup}</div>
       </div>
     </article>
   `;
 }
 
+function getCardActionsMarkup(product) {
+  const detailButton = `<button type="button" class="product-card__cta" data-product-code="${escapeHtml(product.code)}">View Details</button>`;
+
+  if (!isWhatsAppConfigured()) {
+    return `${detailButton}<span class="button button-primary product-card__whatsapp is-disabled" aria-disabled="true">Enquire on WhatsApp</span>`;
+  }
+
+  const whatsappLabel = `Enquire on WhatsApp about ${product.name}, code ${product.code}`;
+
+  return `${detailButton}<a class="button button-primary product-card__whatsapp" href="${escapeHtml(buildWhatsAppLink(product))}" target="_blank" rel="noopener noreferrer" aria-label="${escapeHtml(whatsappLabel)}">Enquire on WhatsApp</a>`;
+}
+
 function getProductImageMarkup(product) {
   if (product.image && product.imageStatus === "verified") {
-    return `<img src="${escapeHtml(product.image)}" alt="${escapeHtml(product.name)} in ${escapeHtml(product.colour)}" />`;
+    return `<img src="${escapeHtml(product.image)}" alt="${escapeHtml(product.name)} in ${escapeHtml(product.colour)}" loading="lazy" />`;
   }
 
   return `
-    <div class="product-placeholder" role="img" aria-label="Neutral placeholder only; not a photograph of ${escapeHtml(product.name)}">
-      <span class="product-placeholder__label">Product photo not supplied</span>
-      <small>Neutral placeholder, not an item photo</small>
+    <div class="product-placeholder" role="img" aria-label="Image Coming Soon">
+      <span class="product-placeholder__label">Image Coming Soon</span>
+      <small>Product photograph not yet added</small>
     </div>
   `;
 }
@@ -160,13 +264,15 @@ function bindEvents() {
   const resetButton = document.getElementById("resetFilters");
   const gridViewButton = document.getElementById("gridViewButton");
   const listViewButton = document.getElementById("listViewButton");
+  const productGrid = document.getElementById("productGrid");
 
   gridViewButton.addEventListener("click", () => setCatalogueView("grid"));
   listViewButton.addEventListener("click", () => setCatalogueView("list"));
 
   searchInput.addEventListener("input", (event) => {
     state.search = event.target.value;
-    renderCatalogue();
+    window.clearTimeout(searchTimer);
+    searchTimer = window.setTimeout(renderCatalogue, 120);
   });
 
   colourFilter.addEventListener("change", (event) => {
@@ -197,6 +303,15 @@ function bindEvents() {
 
     renderCatalogue();
   });
+
+  productGrid.addEventListener("click", (event) => {
+    const trigger = event.target.closest(".product-card__cta");
+    if (!trigger) {
+      return;
+    }
+
+    openProductModal(trigger.dataset.productCode);
+  });
 }
 
 function setCatalogueView(view) {
@@ -220,18 +335,13 @@ function setCatalogueView(view) {
 
 function renderContactDetails() {
   const whatsappLink = document.getElementById("whatsappLink");
-  const phoneLink = document.getElementById("phoneLink");
   const footerContact = document.getElementById("footerContact");
 
   const entries = [];
 
-  if (config.email) {
-    entries.push({ label: "Email", value: config.email, href: `mailto:${config.email}` });
-  }
-
   if (config.city || config.address) {
     const locationParts = [config.city, config.address].filter(Boolean);
-    entries.push({ label: "Location", value: locationParts.join(" — ") || "", href: "" });
+    entries.push({ label: "Location", value: locationParts.join(" - ") || "", href: "" });
   }
 
   if (config.socialLinks) {
@@ -244,33 +354,23 @@ function renderContactDetails() {
 
   if (footerContact) {
     footerContact.innerHTML = entries
-    .slice(0, 3)
-    .map((entry) => {
-      if (!entry.value) return "";
-      if (entry.href) {
-        return `<a href="${escapeHtml(entry.href)}">${escapeHtml(entry.label)}</a>`;
-      }
-      return `<span>${escapeHtml(entry.label)}</span>`;
-    })
-    .join("");
+      .slice(0, 3)
+      .map((entry) => {
+        if (!entry.value) return "";
+        if (entry.href) {
+          return `<a href="${escapeHtml(entry.href)}">${escapeHtml(entry.label)}</a>`;
+        }
+        return `<span>${escapeHtml(entry.label)}</span>`;
+      })
+      .join("");
   }
 
-  if (phoneLink) {
-    const telephoneNumber = String(config.phone || "").replace(/[^\d+]/g, "");
-    if (telephoneNumber) {
-      phoneLink.href = `tel:${telephoneNumber}`;
-      phoneLink.textContent = "Call Atif Leather Store";
-      phoneLink.setAttribute("aria-disabled", "false");
-      phoneLink.hidden = false;
-    } else {
-      phoneLink.removeAttribute("href");
-      phoneLink.setAttribute("aria-disabled", "true");
-      phoneLink.hidden = true;
-    }
+  if (!whatsappLink) {
+    return;
   }
 
-  if (config.whatsappNumber) {
-    whatsappLink.href = getDirectWhatsAppLink("Hello, I would like to enquire about a product from Atif Leather Store. Please share the available details and pricing information.");
+  if (isWhatsAppConfigured()) {
+    whatsappLink.href = getDirectWhatsAppLink("Hello, I would like to enquire about a product from Atif Leather Store. Please share further details. Thank you.");
     whatsappLink.setAttribute("aria-disabled", "false");
     whatsappLink.classList.remove("is-disabled");
     whatsappLink.textContent = "Send enquiry on WhatsApp";
@@ -292,8 +392,12 @@ function cleanWhatsAppNumber(rawValue) {
   return String(rawValue || "").replace(/[^\d]/g, "");
 }
 
+function isWhatsAppConfigured() {
+  return cleanWhatsAppNumber(config.whatsappNumber).length > 0;
+}
+
 function getDirectWhatsAppLink(message) {
-  const whatsappNumber = config.whatsappNumber ? cleanWhatsAppNumber(config.whatsappNumber) : "";
+  const whatsappNumber = cleanWhatsAppNumber(config.whatsappNumber);
   if (!whatsappNumber) {
     return "#";
   }
@@ -301,9 +405,27 @@ function getDirectWhatsAppLink(message) {
   return `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
 }
 
+/**
+ * Builds a WhatsApp click-to-chat link for one product using only the values
+ * recorded in the product data: product name, product code, colour and unit.
+ */
 function buildWhatsAppLink(product) {
-  const message = `Hello, I am interested in ${product.name}, product code ${product.code}. Please share further details.`;
-  return getDirectWhatsAppLink(message);
+  const lines = [
+    "Hello, I would like to enquire about this artificial leather product.",
+    "",
+    `Product Name: ${product.name}`,
+    `Product Code: ${product.code}`,
+    `Colour: ${product.colour}`
+  ];
+
+  const unit = formatUnit(product.unit);
+  if (unit) {
+    lines.push(`Unit: ${unit}`);
+  }
+
+  lines.push("", "Please share further details. Thank you.");
+
+  return getDirectWhatsAppLink(lines.join("\n"));
 }
 
 function openProductModal(productCode) {
@@ -316,41 +438,27 @@ function openProductModal(productCode) {
 
   const modal = document.getElementById("productModal");
   const modalContent = document.getElementById("modalContent");
-  const hasPublicSpecifications = product.publicSpecifications && product.publicSpecifications.length;
-  const specItems = hasPublicSpecifications
-    ? product.publicSpecifications.map((spec) => `<li>${escapeHtml(spec)}</li>`).join("")
-    : "<li>Contact us for product details.</li>";
-  const specificationsHeading = hasPublicSpecifications ? "Product specifications" : "Product information";
-
-  const associatedText = product.associatedText ? `<div class="detail-row"><dt>Associated text</dt><dd>${escapeHtml(product.associatedText)}</dd></div>` : "";
+  const unit = formatUnit(product.unit);
+  const unitRow = unit ? `<div class="detail-row"><dt>Unit</dt><dd>${escapeHtml(unit)}</dd></div>` : "";
 
   modalContent.innerHTML = `
     <div class="modal-body">
       <div class="modal-media">${getProductImageMarkup(product)}</div>
       <div class="modal-content">
-        <p class="modal-kicker">Inventory item</p>
+        <p class="modal-kicker">Catalogue item</p>
         <h3 id="modalTitle">${escapeHtml(product.name)}</h3>
         <dl class="detail-list">
           <div class="detail-row"><dt>Inventory code</dt><dd>${escapeHtml(product.code)}</dd></div>
-          <div class="detail-row"><dt>Colour</dt><dd>${escapeHtml(product.colour)}</dd></div>
-          ${product.unit ? `<div class="detail-row"><dt>Unit</dt><dd>${escapeHtml(product.unit)}</dd></div>` : ""}
-          ${associatedText}
+          <div class="detail-row">
+            <dt>Colour</dt>
+            <dd class="detail-colour">${getColourSwatchMarkup(product.colour)}<span>${escapeHtml(product.colour)}</span></dd>
+          </div>
+          ${unitRow}
         </dl>
-
-        <h4>${specificationsHeading}</h4>
-        <ul class="spec-list">${specItems}</ul>
 
         <div class="modal-actions">
           <button type="button" class="button button-secondary" data-close-modal="true">Back to catalogue</button>
-          <a
-            href="${escapeHtml(buildWhatsAppLink(product))}"
-            class="button button-primary ${config.whatsappNumber ? "" : "is-disabled"}"
-            aria-disabled="${config.whatsappNumber ? "false" : "true"}"
-            ${config.whatsappNumber ? 'target="_blank" rel="noopener noreferrer"' : ""}
-            ${config.whatsappNumber ? "" : 'tabindex="-1"'}
-          >
-            Enquire on WhatsApp
-          </a>
+          ${getModalWhatsAppMarkup(product)}
         </div>
       </div>
     </div>
@@ -362,6 +470,23 @@ function openProductModal(productCode) {
 
   const closeButton = document.getElementById("modalCloseButton");
   closeButton.focus();
+}
+
+function getModalWhatsAppMarkup(product) {
+  if (!isWhatsAppConfigured()) {
+    return `<span class="button button-primary is-disabled" aria-disabled="true">Enquire on WhatsApp</span>`;
+  }
+
+  return `
+    <a
+      href="${escapeHtml(buildWhatsAppLink(product))}"
+      class="button button-primary"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      Enquire on WhatsApp
+    </a>
+  `;
 }
 
 function closeProductModal() {
@@ -472,7 +597,16 @@ function setHeroWhatsAppLink() {
     return;
   }
 
-  heroWhatsApp.href = getDirectWhatsAppLink("Hello, I would like to enquire about a product from Atif Leather Store.");
+  if (!isWhatsAppConfigured()) {
+    heroWhatsApp.href = "#";
+    heroWhatsApp.classList.add("is-disabled");
+    heroWhatsApp.setAttribute("aria-disabled", "true");
+    return;
+  }
+
+  heroWhatsApp.href = getDirectWhatsAppLink("Hello, I would like to enquire about a product from Atif Leather Store. Please share further details. Thank you.");
+  heroWhatsApp.classList.remove("is-disabled");
+  heroWhatsApp.setAttribute("aria-disabled", "false");
   heroWhatsApp.setAttribute("target", "_blank");
   heroWhatsApp.setAttribute("rel", "noopener noreferrer");
 }

@@ -1,0 +1,15 @@
+# Private source documents (never publish)
+product.pdf
+*.pdf
+
+# Private local development report (never publish)
+PRODUCT_DATA_VALIDATION.md
+
+# Local extraction / scratch output
+extraction/
+*.tmp
+*.bak
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
