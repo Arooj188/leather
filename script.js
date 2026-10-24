@@ -1,13 +1,7 @@
+
 const productsList = Array.isArray(window.products) ? window.products : [];
 const config = window.businessConfig || {};
 
-/**
- * Approximate display colours used for the small swatch shown next to each
- * written colour name. These are visual guides only - they are not official
- * colour codes and no colour values were supplied by the product report.
- * The written colour name always stays visible so colour is never the only
- * way to identify a product.
- */
 const COLOUR_SWATCHES = {
   "ASH GREEN": "#8d9c86",
   "BABY PINK": "#f3c3ce",
@@ -33,7 +27,7 @@ const COLOUR_SWATCHES = {
   "L/GRAY": "#bcbcbc",
   "MAROON": "#6e2130",
   "MEHNDI": "#6c6f3f",
-  "MUSTERD": "#a5772c",
+  "Mustard": "#a5772c",
   "N/BLUE": "#24406f",
   "New Beige": "#e2cfae",
   "New Golden": "#d8b154",
@@ -60,24 +54,8 @@ const COLOUR_SWATCHES = {
 
 const MIXED_COLOUR_LABEL = "MIX COLOR";
 
-function getSavedCatalogueView() {
-  try {
-    return window.localStorage.getItem("atifLeatherCatalogueView") === "list" ? "list" : "grid";
-  } catch {
-    return "grid";
-  }
-}
-
-const state = {
-  search: "",
-  colour: "all",
-  family: "all",
-  sort: "name-asc",
-  view: getSavedCatalogueView()
-};
-
-let lastFocusedElement = null;
-let searchTimer = null;
+const productsById = {};
+productsList.forEach(p => { productsById[p.id] = p; });
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -88,172 +66,184 @@ function escapeHtml(value) {
     .replace(/'/g, "&#39;");
 }
 
-function getUniqueColours() {
-  return [...new Set(productsList.map((product) => product.colour))].sort((a, b) => a.localeCompare(b));
+const PAGE_SIZE = 27;
+
+const state = {
+  search: "",
+  colour: "all",
+  family: "all",
+  sort: "name-asc",
+  view: "grid",
+  page: 1
+};
+
+let lastFocusedElement = null;
+let searchTimer = null;
+
+function buildColourIndex() {
+  const idx = {};
+  productsList.forEach(p => {
+    p.colours.forEach(c => {
+      const pc = publicColour(c);
+      if (!idx[pc]) idx[pc] = [];
+      idx[pc].push(p.id);
+    });
+  });
+  return idx;
 }
 
-function getUniqueFamilies() {
-  return [...new Set(productsList.map((product) => product.name))].sort((a, b) => a.localeCompare(b));
+const colourIndex = buildColourIndex();
+
+function publicColour(c) {
+  if (c === "MUSTERD") return "Mustard";
+  return c;
 }
 
-function populateColourFilter() {
-  const colourFilter = document.getElementById("colourFilter");
-  const options = getUniqueColours()
-    .map((colour) => `<option value="${escapeHtml(colour)}">${escapeHtml(colour)}</option>`)
-    .join("");
-
-  colourFilter.innerHTML = `<option value="all">All colours</option>${options}`;
+function getUniqueColours(families) {
+  const seen = new Set();
+  families.forEach(p => p.colours.forEach(c => seen.add(publicColour(c))));
+  return [...seen].sort((a, b) => a.localeCompare(b));
 }
 
-function populateFamilyFilter() {
-  const familyFilter = document.getElementById("familyFilter");
-  const options = getUniqueFamilies()
-    .map((family) => `<option value="${escapeHtml(family)}">${escapeHtml(family)}</option>`)
-    .join("");
-
-  familyFilter.innerHTML = `<option value="all">All products</option>${options}`;
+function getUniqueFamilies(families) {
+  return [...new Set(families.map(p => p.name))].sort((a, b) => a.localeCompare(b));
 }
 
-/**
- * Turns the unit label recorded in the source report into a customer friendly
- * label. The source label itself is kept in the product data; only the way it
- * is written for customers is expanded here.
- */
-function formatUnit(unit) {
-  const raw = String(unit ?? "").trim();
-  if (!raw) {
-    return "";
+function getVisibleFamilies() {
+  let result = productsList;
+
+  const term = state.search.trim().toLowerCase();
+  if (term) {
+    result = result.filter(p => {
+      const nameMatch = p.name.toLowerCase().includes(term);
+      const colourMatch = p.colours.some(c => publicColour(c).toLowerCase().includes(term));
+      return nameMatch || colourMatch;
+    });
   }
 
-  const key = raw.toUpperCase();
-
-  if (key === "MTR") {
-    return "Metre (MTR)";
+  if (state.colour !== "all") {
+    const target = state.colour;
+    result = result.filter(p => p.colours.some(c => publicColour(c) === target));
   }
 
-  if (key === "KG") {
-    return "Kilogram (KG)";
+  if (state.family !== "all") {
+    result = result.filter(p => p.name === state.family);
   }
 
-  return raw;
+  result = result.slice().sort((a, b) => {
+    if (state.sort === "name-asc") return a.name.localeCompare(b.name);
+    if (state.sort === "colour-asc") {
+      const ca = a.colours.map(publicColour).sort().join(", ");
+      const cb = b.colours.map(publicColour).sort().join(", ");
+      return ca.localeCompare(cb);
+    }
+    return 0;
+  });
+
+  const total = result.length;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  if (state.page > totalPages) state.page = totalPages;
+  const start = (state.page - 1) * PAGE_SIZE;
+  const pageItems = result.slice(start, start + PAGE_SIZE);
+
+  return { items: pageItems, total, totalPages };
 }
 
 function getColourSwatchMarkup(colour) {
   if (colour === MIXED_COLOUR_LABEL) {
-    return `<span class="colour-swatch colour-swatch--mixed" aria-hidden="true"></span>`;
+    return "<span class=\"colour-swatch colour-swatch--mixed\" aria-hidden=\"true\"></span>";
   }
-
   const swatchColour = COLOUR_SWATCHES[colour];
-
   if (swatchColour) {
-    return `<span class="colour-swatch" style="--swatch-colour: ${swatchColour}" aria-hidden="true"></span>`;
+    return "<span class=\"colour-swatch\" style=\"--swatch-colour: " + swatchColour + "\" aria-hidden=\"true\"></span>";
   }
-
-  return `<span class="colour-swatch colour-swatch--unmapped" aria-hidden="true"></span>`;
-}
-
-function getVisibleProducts() {
-  const term = state.search.trim().toLowerCase();
-
-  const filtered = productsList.filter((product) => {
-    const searchSource = [product.code, product.name, product.colour]
-      .filter(Boolean)
-      .join(" ")
-      .toLowerCase();
-
-    const matchesSearch = !term || searchSource.includes(term);
-    const matchesColour = state.colour === "all" || product.colour === state.colour;
-    const matchesFamily = state.family === "all" || product.name === state.family;
-
-    return matchesSearch && matchesColour && matchesFamily;
-  });
-
-  const sorted = [...filtered];
-
-  sorted.sort((a, b) => {
-    switch (state.sort) {
-      case "code-asc":
-        return String(a.code).localeCompare(String(b.code), undefined, { numeric: true, sensitivity: "base" });
-      case "colour-asc":
-        return a.colour.localeCompare(b.colour) || String(a.name).localeCompare(String(b.name));
-      case "name-asc":
-      default:
-        return String(a.name).localeCompare(String(b.name)) || String(a.code).localeCompare(String(b.code), undefined, { numeric: true });
-    }
-  });
-
-  return sorted;
+  return "<span class=\"colour-swatch colour-swatch--unmapped\" aria-hidden=\"true\"></span>";
 }
 
 function renderCatalogue() {
   const productGrid = document.getElementById("productGrid");
   const emptyState = document.getElementById("emptyState");
   const countElement = document.getElementById("resultsCount");
-  const visibleProducts = getVisibleProducts();
-  productGrid.dataset.view = state.view;
+  const pagination = document.getElementById("pagination");
+  const { items, total, totalPages } = getVisibleFamilies();
 
-  countElement.textContent =
-    visibleProducts.length === productsList.length
-      ? `${productsList.length} products available`
-      : `Showing ${visibleProducts.length} of ${productsList.length} products`;
+  countElement.textContent = total === productsList.length
+    ? total + " products available"
+    : "Showing " + items.length + " of " + total + " products";
 
-  if (!visibleProducts.length) {
+  if (!items.length) {
     productGrid.innerHTML = "";
     emptyState.classList.remove("hidden");
+    pagination.innerHTML = "";
     return;
   }
 
   emptyState.classList.add("hidden");
-  productGrid.innerHTML = visibleProducts.map((product) => createProductCardMarkup(product)).join("");
+  productGrid.dataset.view = state.view;
+  productGrid.innerHTML = items.map(createProductCardMarkup).join("");
+
+  pagination.innerHTML = renderPagination(totalPages);
+
+  productGrid.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
-function createProductCardMarkup(product) {
-  const imageMarkup = getProductImageMarkup(product);
-  const unit = formatUnit(product.unit);
-  const unitMarkup = unit ? `<span class="product-card__chip">${escapeHtml(unit)}</span>` : "";
-  const colourMarkup = `
-    <span class="product-card__chip product-card__chip--colour">
-      ${getColourSwatchMarkup(product.colour)}
-      <span>${escapeHtml(product.colour)}</span>
-    </span>`;
-  const actionsMarkup = getCardActionsMarkup(product);
-
-  return `
-    <article class="product-card" aria-label="${escapeHtml(product.name)} product card">
-      <div class="product-card__media">${imageMarkup}</div>
-      <div class="product-card__content">
-        <h3 class="product-card__name">${escapeHtml(product.name)}</h3>
-        <p class="product-card__code">Code ${escapeHtml(product.code)}</p>
-        <div class="product-card__meta">${colourMarkup}${unitMarkup}</div>
-        <div class="product-card__actions">${actionsMarkup}</div>
-      </div>
-    </article>
-  `;
+function renderPagination(totalPages) {
+  if (totalPages <= 1) return "";
+  const p = state.page;
+  const disabledPrev = p <= 1 ? " disabled" : "";
+  const disabledNext = p >= totalPages ? " disabled" : "";
+  let html = "";
+  html += "<button type=\"button\" class=\"button button-ghost pagination-btn\" data-page=\"1\" aria-label=\"First page\"" + disabledPrev + ">First</button>";
+  html += "<button type=\"button\" class=\"button button-ghost pagination-btn\" data-page=\"" + (p - 1) + "\" aria-label=\"Previous page\"" + disabledPrev + ">Previous</button>";
+  html += "<span class=\"pagination-current\">Page " + p + " of " + totalPages + "</span>";
+  html += "<button type=\"button\" class=\"button button-ghost pagination-btn\" data-page=\"" + (p + 1) + "\" aria-label=\"Next page\"" + disabledNext + ">Next</button>";
+  html += "<button type=\"button\" class=\"button button-ghost pagination-btn\" data-page=\"" + totalPages + "\" aria-label=\"Last page\"" + disabledNext + ">Last</button>";
+  return html;
 }
 
-function getCardActionsMarkup(product) {
-  const detailButton = `<button type="button" class="product-card__cta" data-product-code="${escapeHtml(product.code)}">View Details</button>`;
+function createProductCardMarkup(p) {
+  const imageMarkup = getProductImageMarkup(p);
+  const visibleColours = p.colours.slice(0, 3);
+  const hiddenCount = p.colours.length - 3;
+  const coloursHtml = visibleColours.map(c => {
+    const label = publicColour(c);
+    return "<span class=\"product-card__chip product-card__chip--colour\">" + getColourSwatchMarkup(c) + "<span>" + escapeHtml(label) + "</span></span>";
+  }).concat(hiddenCount > 0 ? "<button type=\"button\" class=\"product-card__chip product-card__chip--more\" onclick=\"return openProductDetail(" + p.id + ");\">+" + hiddenCount + " more colours</button>" : "").join("");
 
-  if (!isWhatsAppConfigured()) {
-    return `${detailButton}<span class="button button-primary product-card__whatsapp is-disabled" aria-disabled="true">Enquire on WhatsApp</span>`;
+  return "<article class=\"product-card\" aria-label=\"Product card: " + escapeHtml(p.name) + "\">" +
+    "<div class=\"product-card__media\">" + imageMarkup + "</div>" +
+    "<div class=\"product-card__content\">" +
+    "<h3 class=\"product-card__name\">" + escapeHtml(p.name) + "</h3>" +
+    "<div class=\"product-card__meta\">" + coloursHtml + "</div>" +
+    "<div class=\"product-card__actions\">" +
+    "<button type=\"button\" class=\"product-card__cta\" data-product-id=\"" + p.id + "\">View Details</button>" +
+    buildCardWhatsApp(p) +
+    "</div>" +
+    "</div>" +
+    "</article>";
+}
+
+function buildCardWhatsApp(p) {
+  if (!isWhatsAppConfigured()) return "<span class=\"button button-primary product-card__whatsapp is-disabled\" aria-disabled=\"true\">Enquire on WhatsApp</span>";
+  const label = "Enquire on WhatsApp about " + escapeHtml(p.name);
+  return "<a class=\"button button-primary product-card__whatsapp\" href=\"#\" target=\"_blank\" rel=\"noopener noreferrer\" aria-label=\"" + label + "\" onclick=\"return openWhatsAppForFamily(" + p.id + ");\">Enquire on WhatsApp</a>";
+}
+
+function getProductImageMarkup(p) {
+  if (p.image && p.imageStatus === "verified") {
+    return "<img src=\"" + escapeHtml(p.image) + "\" alt=\"" + escapeHtml(p.name) + "\" loading=\"lazy\" />";
   }
-
-  const whatsappLabel = `Enquire on WhatsApp about ${product.name}, code ${product.code}`;
-
-  return `${detailButton}<a class="button button-primary product-card__whatsapp" href="${escapeHtml(buildWhatsAppLink(product))}" target="_blank" rel="noopener noreferrer" aria-label="${escapeHtml(whatsappLabel)}">Enquire on WhatsApp</a>`;
+  return "<div class=\"product-placeholder\" role=\"img\" aria-label=\"Image Coming Soon\"><span class=\"product-placeholder__label\">Image Coming Soon</span><small>Product photograph not yet added</small></div>";
 }
 
-function getProductImageMarkup(product) {
-  if (product.image && product.imageStatus === "verified") {
-    return `<img src="${escapeHtml(product.image)}" alt="${escapeHtml(product.name)} in ${escapeHtml(product.colour)}" loading="lazy" />`;
-  }
-
-  return `
-    <div class="product-placeholder" role="img" aria-label="Image Coming Soon">
-      <span class="product-placeholder__label">Image Coming Soon</span>
-      <small>Product photograph not yet added</small>
-    </div>
-  `;
+function openWhatsAppForFamily(familyId) {
+  const p = productsById[familyId];
+  if (!p) return false;
+  if (!isWhatsAppConfigured()) return false;
+  const firstColour = p.colours.length ? publicColour(p.colours[0]) : "";
+  const message = "Hello, I would like to enquire about " + escapeHtml(p.name) + " in " + escapeHtml(firstColour) + ". Please share further details.";
+  window.open(getDirectWhatsAppLink(message), "_blank");
+  return false;
 }
 
 function bindEvents() {
@@ -265,28 +255,33 @@ function bindEvents() {
   const gridViewButton = document.getElementById("gridViewButton");
   const listViewButton = document.getElementById("listViewButton");
   const productGrid = document.getElementById("productGrid");
+  const pagination = document.getElementById("pagination");
 
   gridViewButton.addEventListener("click", () => setCatalogueView("grid"));
   listViewButton.addEventListener("click", () => setCatalogueView("list"));
 
   searchInput.addEventListener("input", (event) => {
     state.search = event.target.value;
+    state.page = 1;
     window.clearTimeout(searchTimer);
     searchTimer = window.setTimeout(renderCatalogue, 120);
   });
 
   colourFilter.addEventListener("change", (event) => {
     state.colour = event.target.value;
+    state.page = 1;
     renderCatalogue();
   });
 
   familyFilter.addEventListener("change", (event) => {
     state.family = event.target.value;
+    state.page = 1;
     renderCatalogue();
   });
 
   sortSelect.addEventListener("change", (event) => {
     state.sort = event.target.value;
+    state.page = 1;
     renderCatalogue();
   });
 
@@ -295,22 +290,29 @@ function bindEvents() {
     state.colour = "all";
     state.family = "all";
     state.sort = "name-asc";
-
+    state.page = 1;
     searchInput.value = "";
     colourFilter.value = "all";
     familyFilter.value = "all";
     sortSelect.value = "name-asc";
-
     renderCatalogue();
   });
 
   productGrid.addEventListener("click", (event) => {
     const trigger = event.target.closest(".product-card__cta");
-    if (!trigger) {
-      return;
-    }
+    if (!trigger) return;
+    const familyId = Number(trigger.dataset.productId);
+    openProductDetail(familyId);
+  });
 
-    openProductModal(trigger.dataset.productCode);
+  pagination.addEventListener("click", (event) => {
+    const btn = event.target.closest(".pagination-btn");
+    if (!btn) return;
+    const page = Number(btn.dataset.page);
+    if (page && page >= 1) {
+      state.page = page;
+      renderCatalogue();
+    }
   });
 }
 
@@ -319,18 +321,12 @@ function setCatalogueView(view) {
   const productGrid = document.getElementById("productGrid");
   const gridViewButton = document.getElementById("gridViewButton");
   const listViewButton = document.getElementById("listViewButton");
-
   productGrid.dataset.view = state.view;
   gridViewButton.setAttribute("aria-pressed", String(state.view === "grid"));
   listViewButton.setAttribute("aria-pressed", String(state.view === "list"));
   gridViewButton.classList.toggle("is-selected", state.view === "grid");
   listViewButton.classList.toggle("is-selected", state.view === "list");
-
-  try {
-    window.localStorage.setItem("atifLeatherCatalogueView", state.view);
-  } catch {
-    return;
-  }
+  try { window.localStorage.setItem("atifLeatherCatalogueView", state.view); } catch { return; }
 }
 
 function renderContactDetails() {
@@ -338,12 +334,10 @@ function renderContactDetails() {
   const footerContact = document.getElementById("footerContact");
 
   const entries = [];
-
   if (config.city || config.address) {
     const locationParts = [config.city, config.address].filter(Boolean);
     entries.push({ label: "Location", value: locationParts.join(" - ") || "", href: "" });
   }
-
   if (config.socialLinks) {
     Object.entries(config.socialLinks).forEach(([network, value]) => {
       if (value) {
@@ -358,16 +352,14 @@ function renderContactDetails() {
       .map((entry) => {
         if (!entry.value) return "";
         if (entry.href) {
-          return `<a href="${escapeHtml(entry.href)}">${escapeHtml(entry.label)}</a>`;
+          return "<a href=\"" + escapeHtml(entry.href) + "\">" + escapeHtml(entry.label) + "</a>";
         }
-        return `<span>${escapeHtml(entry.label)}</span>`;
+        return "<span>" + escapeHtml(entry.label) + "</span>";
       })
       .join("");
   }
 
-  if (!whatsappLink) {
-    return;
-  }
+  if (!whatsappLink) return;
 
   if (isWhatsAppConfigured()) {
     whatsappLink.href = getDirectWhatsAppLink("Hello, I would like to enquire about a product from Atif Leather Store. Please share further details. Thank you.");
@@ -398,71 +390,36 @@ function isWhatsAppConfigured() {
 
 function getDirectWhatsAppLink(message) {
   const whatsappNumber = cleanWhatsAppNumber(config.whatsappNumber);
-  if (!whatsappNumber) {
-    return "#";
-  }
-
-  return `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+  if (!whatsappNumber) return "#";
+  return "https://wa.me/" + whatsappNumber + "?text=" + encodeURIComponent(message);
 }
 
-/**
- * Builds a WhatsApp click-to-chat link for one product using only the values
- * recorded in the product data: product name, product code, colour and unit.
- */
-function buildWhatsAppLink(product) {
-  const lines = [
-    "Hello, I would like to enquire about this artificial leather product.",
-    "",
-    `Product Name: ${product.name}`,
-    `Product Code: ${product.code}`,
-    `Colour: ${product.colour}`
-  ];
-
-  const unit = formatUnit(product.unit);
-  if (unit) {
-    lines.push(`Unit: ${unit}`);
-  }
-
-  lines.push("", "Please share further details. Thank you.");
-
-  return getDirectWhatsAppLink(lines.join("\n"));
-}
-
-function openProductModal(productCode) {
-  const product = productsList.find((item) => String(item.code) === String(productCode));
-  if (!product) {
-    return;
-  }
-
+function openProductDetail(familyId) {
+  const p = productsById[familyId];
+  if (!p) return;
   lastFocusedElement = document.activeElement;
 
   const modal = document.getElementById("productModal");
   const modalContent = document.getElementById("modalContent");
-  const unit = formatUnit(product.unit);
-  const unitRow = unit ? `<div class="detail-row"><dt>Unit</dt><dd>${escapeHtml(unit)}</dd></div>` : "";
 
-  modalContent.innerHTML = `
-    <div class="modal-body">
-      <div class="modal-media">${getProductImageMarkup(product)}</div>
-      <div class="modal-content">
-        <p class="modal-kicker">Catalogue item</p>
-        <h3 id="modalTitle">${escapeHtml(product.name)}</h3>
-        <dl class="detail-list">
-          <div class="detail-row"><dt>Inventory code</dt><dd>${escapeHtml(product.code)}</dd></div>
-          <div class="detail-row">
-            <dt>Colour</dt>
-            <dd class="detail-colour">${getColourSwatchMarkup(product.colour)}<span>${escapeHtml(product.colour)}</span></dd>
-          </div>
-          ${unitRow}
-        </dl>
+  const imageMarkup = getProductImageMarkup(p);
+  const coloursHtml = p.colours.map((c, i) => {
+    const label = publicColour(c);
+    return "<button type=\"button\" class=\"detail-swatch\" data-colour=\"" + c + "\">" + escapeHtml(label) + "</button>";
+  }).join("");
 
-        <div class="modal-actions">
-          <button type="button" class="button button-secondary" data-close-modal="true">Back to catalogue</button>
-          ${getModalWhatsAppMarkup(product)}
-        </div>
-      </div>
-    </div>
-  `;
+  modalContent.innerHTML = "<div class=\"modal-body\">" +
+    "<div class=\"modal-media\">" + imageMarkup + "</div>" +
+    "<div class=\"modal-content\">" +
+    "<p class=\"modal-kicker\">Catalogue item</p>" +
+    "<h3 id=\"modalTitle\">" + escapeHtml(p.name) + "</h3>" +
+    "<div class=\"detail-colours\"><strong>Available colours:</strong> " + coloursHtml + "</div>" +
+    "<div class=\"modal-actions\">" +
+    "<button type=\"button\" class=\"button button-secondary\" data-close-modal=\"true\">Back to catalogue</button>" +
+    buildModalWhatsApp(p) +
+    "</div>" +
+    "</div>" +
+    "</div>";
 
   modal.classList.remove("hidden");
   modal.setAttribute("aria-hidden", "false");
@@ -470,23 +427,78 @@ function openProductModal(productCode) {
 
   const closeButton = document.getElementById("modalCloseButton");
   closeButton.focus();
+
+  modalContent.addEventListener("click", (event) => {
+    const btn = event.target.closest(".detail-swatch");
+    if (btn) {
+      modalContent.querySelectorAll(".detail-swatch").forEach(b => b.classList.remove("selected"));
+      btn.classList.add("selected");
+    }
+  });
 }
 
-function getModalWhatsAppMarkup(product) {
-  if (!isWhatsAppConfigured()) {
-    return `<span class="button button-primary is-disabled" aria-disabled="true">Enquire on WhatsApp</span>`;
-  }
+function buildModalWhatsApp(p) {
+  if (!isWhatsAppConfigured()) return "<span class=\"button button-primary is-disabled\" aria-disabled=\"true\">Enquire on WhatsApp</span>";
+  const firstColour = p.colours.length ? publicColour(p.colours[0]) : "";
+  const label = "Enquire on WhatsApp about " + escapeHtml(p.name);
+  return "<a class=\"button button-primary\" href=\"#\" target=\"_blank\" rel=\"noopener noreferrer\" aria-label=\"" + label + "\" onclick=\"return openWhatsAppForFamily(" + p.id + ");\">Enquire on WhatsApp</a>";
+}
 
-  return `
-    <a
-      href="${escapeHtml(buildWhatsAppLink(product))}"
-      class="button button-primary"
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-      Enquire on WhatsApp
-    </a>
-  `;
+function init() {
+  populateColourFilter();
+  populateFamilyFilter();
+  bindEvents();
+  setCatalogueView(state.view);
+  renderContactDetails();
+  setHeroWhatsAppLink();
+  initHeroImage();
+  renderCatalogue();
+  setCopyrightYear();
+  setActiveNav();
+  initMobileNavigation();
+
+  document.addEventListener("keydown", (event) => {
+    const modal = document.getElementById("productModal");
+
+    if (event.key === "Escape") {
+      if (!modal.classList.contains("hidden")) {
+        closeProductModal();
+        return;
+      }
+      const toggle = document.querySelector(".menu-toggle");
+      const mobileMenu = document.getElementById("mobileMenu");
+      if (toggle && mobileMenu && !mobileMenu.hidden) {
+        toggle.setAttribute("aria-expanded", "false");
+        toggle.setAttribute("aria-label", "Open navigation menu");
+        toggle.classList.remove("is-open");
+        mobileMenu.hidden = true;
+        toggle.focus();
+      }
+      return;
+    }
+
+    if (event.key === "Tab" && !modal.classList.contains("hidden")) {
+      const focusable = [...modal.querySelectorAll("a[href]:not([tabindex='-1']), button:not([disabled])")];
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+  });
+
+  const modal = document.getElementById("productModal");
+  document.getElementById("modalCloseButton").addEventListener("click", closeProductModal);
+  modal.addEventListener("click", (event) => {
+    if (event.target.closest("[data-close-modal='true']") || event.target.classList.contains("modal-backdrop")) {
+      closeProductModal();
+    }
+  });
 }
 
 function closeProductModal() {
@@ -517,7 +529,7 @@ function setActiveNav() {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
           navLinks.forEach((link) => {
-            const isActive = link.getAttribute("href") === `#${entry.target.id}`;
+            const isActive = link.getAttribute("href") === "#" + entry.target.id;
             link.classList.toggle("active", isActive);
           });
         }
@@ -611,62 +623,18 @@ function setHeroWhatsAppLink() {
   heroWhatsApp.setAttribute("rel", "noopener noreferrer");
 }
 
-function init() {
-  populateColourFilter();
-  populateFamilyFilter();
-  bindEvents();
-  setCatalogueView(state.view);
-  renderContactDetails();
-  setHeroWhatsAppLink();
-  initHeroImage();
-  renderCatalogue();
-  setCopyrightYear();
-  setActiveNav();
-  initMobileNavigation();
+window.addEventListener("DOMContentLoaded", init);
 
-  document.addEventListener("keydown", (event) => {
-    const modal = document.getElementById("productModal");
-
-    if (event.key === "Escape") {
-      if (!modal.classList.contains("hidden")) {
-        closeProductModal();
-        return;
-      }
-
-      const toggle = document.querySelector(".menu-toggle");
-      const mobileMenu = document.getElementById("mobileMenu");
-      if (toggle && mobileMenu && !mobileMenu.hidden) {
-        toggle.setAttribute("aria-expanded", "false");
-        toggle.setAttribute("aria-label", "Open navigation menu");
-        toggle.classList.remove("is-open");
-        mobileMenu.hidden = true;
-        toggle.focus();
-      }
-      return;
-    }
-
-    if (event.key === "Tab" && !modal.classList.contains("hidden")) {
-      const focusable = [...modal.querySelectorAll("a[href]:not([tabindex='-1']), button:not([disabled])")];
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    }
-  });
-
-  const modal = document.getElementById("productModal");
-  document.getElementById("modalCloseButton").addEventListener("click", closeProductModal);
-  modal.addEventListener("click", (event) => {
-    if (event.target.closest("[data-close-modal='true']") || event.target.classList.contains("modal-backdrop")) {
-      closeProductModal();
-    }
-  });
+function populateColourFilter() {
+  const colourFilter = document.getElementById("colourFilter");
+  const colours = getUniqueColours(productsList);
+  colourFilter.innerHTML = "<option value=\"all\">All colours</option>" +
+    colours.map(c => "<option value=\"" + c + "\">" + escapeHtml(c) + "</option>").join("");
 }
 
-window.addEventListener("DOMContentLoaded", init);
+function populateFamilyFilter() {
+  const familyFilter = document.getElementById("familyFilter");
+  const families = getUniqueFamilies(productsList);
+  familyFilter.innerHTML = "<option value=\"all\">All product families</option>" +
+    families.map(f => "<option value=\"" + f + "\">" + escapeHtml(f) + "</option>").join("");
+}

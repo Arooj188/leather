@@ -49,6 +49,8 @@ Then open:
 http://localhost:8000/
 ```
 
+Run the server from the project root so relative image and stylesheet paths resolve correctly.
+
 ## How to add a new product
 
 Open `products.js` and add a new object to the `products` array.
