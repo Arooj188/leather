@@ -969,6 +969,28 @@ a:focus-visible {
   margin: 1.2rem 0;
 }
 
+.contact-instagram-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--color-text-soft);
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: color var(--transition);
+}
+
+.contact-instagram-link:hover,
+.contact-instagram-link:focus-visible {
+  color: var(--color-charcoal);
+}
+
+.contact-instagram-icon {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
 .site-footer {
   background: #efeae4;
   border-top: 1px solid rgba(116, 108, 101, 0.12);
@@ -1006,6 +1028,26 @@ a:focus-visible {
   gap: 0.8rem;
   color: var(--color-text-soft);
   font-size: 0.92rem;
+}
+
+.footer-instagram-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--color-text-soft);
+  text-decoration: none;
+  font-size: 0.92rem;
+  transition: color var(--transition);
+}
+
+.footer-instagram-link:hover,
+.footer-instagram-link:focus-visible {
+  color: var(--color-charcoal);
+}
+
+.footer-instagram-icon {
+  width: 1rem;
+  height: 1rem;
 }
 
 /* Modal */
